@@ -1,0 +1,1045 @@
+<!DOCTYPE html>
+<!--
+  Cleaned by static HTML ad cleanup on 2026-02.
+  Source: Nocturne launcher HTML (from mathlearning zip -> 
+  cdn.jsdelivr.net/gh/devmidnightst/nocturnesinglefile@main/index.html).
+
+  Removed:
+  - Removed Google Analytics (gtag) inline script (1 occurrence)
+  - Removed effectivecpmnetwork.com ad <script> (1 occurrence)
+  - Removed CPM ad self-reinjection setInterval script (1 occurrence)
+  - Removed Google Fonts preconnect (fonts.googleapis.com) (1 occurrence)
+  - Removed Google Fonts preconnect (fonts.gstatic.com) (1 occurrence)
+  - Removed Google Fonts Inter stylesheet <link> (1 occurrence)
+
+  Notes / caveats:
+  - No local assets from the zip were referenced by this HTML, so nothing
+    needed to be inlined. All icons are inline SVG; the favicon is already
+    a data URI.
+  - The launcher still needs internet to work: it fetches its game catalog
+    from cdn.jsdelivr.net (gh/freebuisness/assets or gh/gn-math/assets) and
+    each individual game's HTML from the same CDN. That is the app's design,
+    not part of the ad/tracker layer.
+  - The 'Inter' web font was dropped along with the Google Fonts external
+    request; the CSS already declares a full ui-sans-serif/system-ui/-apple-
+    system/Segoe UI/Roboto/sans-serif fallback, so type still renders cleanly.
+  - The UGS game library loads its catalog directly from the UGS-Files
+    directory on jsDelivr and opens each game's single-file HTML from there.
+-->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="dark">
+<title>Bakaboiz</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 174 175'><rect width='174' height='175' rx='30' fill='%230b0a14'/><path d='M87 150 L52 105 Q45 96 50 87 L17 15 Q15 6 24 10 Q62 50 78 92 Q83 105 87 118 Q91 105 96 92 Q112 50 150 10 Q159 6 157 15 L124 87 Q129 96 122 105 Z' fill='%23e8384f'/></svg>">
+<style>
+    :root{
+        --bg:#05060d; --bg-2:#0a0b16; --bg-3:#12111f;
+        --panel:rgba(20,22,38,.6); --panel-2:rgba(26,26,46,.75);
+        --fg:#eae6ff; --fg-2:#b3adda; --fg-3:#7c77a3;
+        --accent:#b8b0da; --accent-lit:#cdc4ff;
+        --line:rgba(200,195,230,.12); --line-2:rgba(200,195,230,.24);
+        --font:"Inter",ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+        --ease:cubic-bezier(.22,.61,.36,1);
+    }
+    *{box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    html,body{margin:0;min-height:100%;color:var(--fg);font-family:var(--font);-webkit-font-smoothing:antialiased}
+    html{background:var(--bg)}
+    body{background:transparent}
+    body{overflow-x:hidden}
+    ::selection{background:rgba(184,176,218,.3)}
+    a{color:inherit;text-decoration:none}
+    button{font-family:inherit}
+
+    .sky{position:fixed;inset:0;z-index:-4;background:
+        radial-gradient(120% 80% at 84% -12%,rgba(184,176,218,.10),transparent 46%),
+        radial-gradient(90% 60% at 10% 2%,rgba(120,96,220,.10),transparent 58%),
+        linear-gradient(180deg,var(--bg) 46%,var(--bg-2) 100%)}
+    .dither{position:fixed;inset:0;z-index:-3;display:block;width:100%;height:100%}
+    .stars{position:fixed;inset:0;z-index:-2;pointer-events:none}
+    .stars i{position:absolute;border-radius:50%;background:#fff;opacity:.5;animation:tw var(--d,4s) ease-in-out infinite alternate}
+    @keyframes tw{from{opacity:.12}to{opacity:.8}}
+
+    header{position:sticky;top:0;z-index:30;display:flex;align-items:center;gap:14px;
+        padding:14px clamp(16px,4vw,34px);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+        background:linear-gradient(180deg,rgba(5,6,13,.82),rgba(5,6,13,.35));border-bottom:1px solid var(--line)}
+    .brand{display:flex;align-items:center;gap:11px;font-weight:600;font-size:18px;flex:none}
+    .v-logo{width:24px;height:24px;flex:none;display:block;color:#e8384f;animation:vGlow 3.6s ease-in-out infinite}
+    .v-logo svg{width:100%;height:100%;display:block;fill:currentColor}
+    @keyframes vGlow{
+        0%,100%{filter:drop-shadow(0 0 2px currentColor) drop-shadow(0 0 4px currentColor);opacity:.75}
+        50%{filter:drop-shadow(0 0 8px currentColor) drop-shadow(0 0 18px currentColor);opacity:1}
+    }
+    .search{flex:1;max-width:460px;display:flex;align-items:center;gap:9px;padding:9px 14px;border-radius:12px;
+        background:var(--panel);border:1px solid var(--line);transition:border-color .3s var(--ease)}
+    .search:focus-within{border-color:var(--line-2)}
+    .search svg{width:15px;height:15px;color:var(--fg-3);flex:none}
+    .search input{flex:1;background:none;border:none;outline:none;color:var(--fg);font-size:14px}
+    .search input::placeholder{color:var(--fg-3)}
+    .seg{display:flex;background:var(--panel);border:1px solid var(--line);border-radius:11px;padding:3px;gap:2px}
+    .seg button{background:none;border:none;color:var(--fg-2);font-size:12.5px;font-weight:500;padding:7px 13px;border-radius:8px;cursor:pointer;transition:.25s var(--ease)}
+    .seg button.on{background:var(--accent);color:#14122a;font-weight:600}
+    .seg button.special{position:relative;color:#14122a;font-weight:700;
+        background:linear-gradient(90deg,#b8b0da,#8f7fe0,#f0b3ff,#8f7fe0,#b8b0da);background-size:250% 100%;
+        animation:sussyShimmer 3.5s linear infinite;box-shadow:0 0 12px rgba(143,127,224,.55);overflow:visible}
+    .seg button.special::before{content:"★";margin-right:5px;color:#fff3b0;text-shadow:0 0 6px rgba(255,220,120,.9)}
+    .seg button.special::after{content:"BEST";position:absolute;top:-8px;right:-6px;font-size:8px;font-weight:800;
+        letter-spacing:.5px;color:#14122a;background:#ffd966;padding:1px 5px;border-radius:20px;
+        box-shadow:0 0 8px rgba(255,217,102,.8);animation:sussyPulse 1.8s ease-in-out infinite}
+    .seg button.special.on{box-shadow:0 0 20px rgba(143,127,224,.9),0 0 34px rgba(240,179,255,.4)}
+    @keyframes sussyShimmer{0%{background-position:0% 0}100%{background-position:250% 0}}
+    @keyframes sussyPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.12)}}
+    .opt.special{position:relative;border-color:#8f7fe0;background:linear-gradient(135deg,rgba(184,176,218,.18),rgba(240,179,255,.12));
+        box-shadow:0 0 16px rgba(143,127,224,.35)}
+    .opt.special .best-tag{display:block;margin-top:3px;font-size:11px;font-weight:600;
+        background:linear-gradient(90deg,#b8b0da,#f0b3ff);-webkit-background-clip:text;background-clip:text;color:transparent}
+    .opt.special::after{content:"★ BEST";position:absolute;top:-9px;left:50%;transform:translateX(-50%);font-size:9px;
+        font-weight:800;letter-spacing:.5px;color:#14122a;background:#ffd966;padding:2px 8px;border-radius:20px;
+        box-shadow:0 0 10px rgba(255,217,102,.7)}
+    .icon-btn{width:38px;height:38px;flex:none;display:grid;place-items:center;border-radius:11px;background:var(--panel);
+        border:1px solid var(--line);color:var(--fg-2);cursor:pointer;transition:.25s var(--ease)}
+    .icon-btn:hover{color:var(--fg);border-color:var(--line-2);transform:translateY(-1px)}
+    .icon-btn svg{width:18px;height:18px}
+
+    main{max-width:1240px;margin:0 auto;padding:22px clamp(16px,4vw,34px) 80px}
+
+    .chips{display:flex;gap:8px;overflow-x:auto;padding:4px 0 16px;scrollbar-width:none}
+    .chips::-webkit-scrollbar{display:none}
+    .chip{white-space:nowrap;padding:8px 15px;border-radius:999px;background:var(--panel);border:1px solid var(--line);
+        color:var(--fg-2);font-size:13px;cursor:pointer;transition:.25s var(--ease)}
+    .chip:hover{color:var(--fg);border-color:var(--line-2)}
+    .chip.on{background:var(--accent);color:#14122a;border-color:var(--accent);font-weight:600}
+
+    .row-title{font-size:13px;letter-spacing:1.5px;text-transform:uppercase;color:var(--fg-3);margin:22px 2px 12px;font-weight:600}
+
+    .featured{display:flex;gap:14px;overflow-x:auto;padding-bottom:8px;scroll-snap-type:x mandatory;scrollbar-width:none}
+    .featured::-webkit-scrollbar{display:none}
+    .feat-card{scroll-snap-align:start;flex:0 0 clamp(220px,42vw,320px);aspect-ratio:16/10;border-radius:16px;overflow:hidden;
+        position:relative;cursor:pointer;border:1px solid var(--line);background:var(--bg-3);transition:transform .4s var(--ease)}
+    .feat-card:hover{transform:translateY(-4px)}
+    .feat-card img{width:100%;height:100%;object-fit:cover;display:block}
+    .feat-card .cap{position:absolute;left:0;right:0;bottom:0;padding:26px 14px 12px;font-weight:600;font-size:15px;
+        background:linear-gradient(0deg,rgba(5,6,13,.92),transparent)}
+
+    .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px}
+    .card{position:relative;aspect-ratio:1/1;border-radius:14px;overflow:hidden;cursor:pointer;background:var(--bg-3);
+        border:1px solid var(--line);transition:transform .35s var(--ease),border-color .35s var(--ease)}
+    .card:hover{transform:translateY(-4px);border-color:var(--line-2)}
+    .card img{width:100%;height:100%;object-fit:cover;display:block}
+    .card .cover-fallback{position:absolute;inset:0;display:grid;place-items:center;
+        background:linear-gradient(135deg,rgba(184,176,218,.28),rgba(18,17,31,.95));
+        color:var(--accent-lit);font-size:42px;font-weight:700;text-shadow:0 0 24px rgba(205,196,255,.55)}
+    .card .cap{position:absolute;left:0;right:0;bottom:0;padding:20px 11px 9px;font-size:12.5px;font-weight:500;line-height:1.25;
+        background:linear-gradient(0deg,rgba(5,6,13,.94),transparent);opacity:0;transition:opacity .3s var(--ease)}
+    .card:hover .cap{opacity:1}
+    .card .star{position:absolute;top:7px;right:7px;width:26px;height:26px;display:grid;place-items:center;border-radius:8px;
+        background:rgba(5,6,13,.55);color:var(--fg-3);font-size:14px;opacity:0;transition:.25s var(--ease);z-index:2}
+    .card:hover .star,.card .star.on{opacity:1}
+    .card .star.on{color:#ffd98a}
+
+    .status{grid-column:1/-1;text-align:center;color:var(--fg-3);padding:60px 20px;font-size:14px}
+    .spinner{width:34px;height:34px;border:3px solid var(--line-2);border-top-color:var(--accent);border-radius:50%;
+        margin:0 auto 16px;animation:spin .8s linear infinite}
+    @keyframes spin{to{transform:rotate(360deg)}}
+
+    .viewer{position:fixed;inset:0;z-index:60;background:var(--bg);display:none;flex-direction:column}
+    .viewer.open{display:flex}
+    .v-bar{display:flex;align-items:center;gap:12px;padding:10px 16px;border-bottom:1px solid var(--line);background:var(--bg-2)}
+    .v-bar .v-title{font-weight:600;font-size:15px}
+    .v-bar .v-auth{color:var(--fg-3);font-size:12px}
+    .v-bar .v-sp{flex:1}
+    .v-bar button{background:var(--panel);border:1px solid var(--line);color:var(--fg-2);font-size:13px;padding:8px 14px;
+        border-radius:9px;cursor:pointer;transition:.25s var(--ease)}
+    .v-bar button:hover{color:var(--fg);border-color:var(--line-2)}
+    .v-bar button.close{color:#ffb3b3}
+    .viewer iframe{flex:1;width:100%;border:0;background:#000}
+
+    .overlay{position:fixed;inset:0;z-index:80;display:none;align-items:center;justify-content:center;padding:20px;
+        background:rgba(4,5,11,.72);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+    .overlay.open{display:flex}
+    .sheet{width:100%;max-width:460px;background:var(--panel-2);border:1px solid var(--line-2);border-radius:20px;
+        padding:26px;box-shadow:0 40px 90px -30px #000;animation:pop .4s var(--ease)}
+    @keyframes pop{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+    .sheet h2{margin:0 0 4px;font-size:22px;display:flex;align-items:center;gap:10px}
+    .sheet .sub{color:var(--fg-2);font-size:13.5px;margin:0 0 20px;line-height:1.5}
+    .field{margin:14px 0}
+    .field .lab{font-size:12px;letter-spacing:.5px;text-transform:uppercase;color:var(--fg-3);margin-bottom:8px;font-weight:600}
+    .opts{display:flex;gap:8px}
+    .opt{flex:1;text-align:center;padding:11px;border-radius:11px;background:var(--panel);border:1px solid var(--line);
+        color:var(--fg-2);font-size:13px;cursor:pointer;transition:.25s var(--ease)}
+    .opt.on{border-color:var(--accent);color:var(--fg);background:rgba(184,176,218,.12)}
+    .toggle{display:flex;align-items:center;justify-content:space-between;gap:12px}
+    .toggle .t-desc{font-size:12.5px;color:var(--fg-3);margin-top:2px}
+    .sw{width:44px;height:26px;border-radius:999px;background:var(--bg-3);border:1px solid var(--line-2);position:relative;cursor:pointer;flex:none;transition:.25s var(--ease)}
+    .sw::after{content:"";position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:50%;background:var(--fg-2);transition:.25s var(--ease)}
+    .sw.on{background:var(--accent);border-color:var(--accent)}
+    .sw.on::after{left:20px;background:#14122a}
+    .colorpick{display:flex;gap:8px;align-items:center}
+    .colorpick input[type=color]{width:44px;height:34px;border:1px solid var(--line-2);border-radius:9px;background:none;cursor:pointer;padding:2px}
+    .swatches{display:flex;gap:6px}
+    .swatch{width:26px;height:26px;border-radius:8px;cursor:pointer;border:2px solid transparent;transition:.2s}
+    .swatch:hover{transform:scale(1.08)}
+    .btn{width:100%;margin-top:22px;padding:13px;border-radius:12px;border:none;background:var(--accent);color:#14122a;
+        font-weight:600;font-size:15px;cursor:pointer;transition:.25s var(--ease)}
+    .btn:hover{background:var(--accent-lit)}
+    .ghost{background:none;border:1px solid var(--line-2);color:var(--fg-2);margin-top:10px}
+    .ghost:hover{background:var(--panel);color:var(--fg)}
+    .req-btn{display:none;align-items:center;gap:7px;background:linear-gradient(180deg,#ffe38a,#e0a800);color:#14122a;border:none;
+        font-weight:700;font-size:12px;padding:8px 13px;border-radius:10px;cursor:pointer;transition:.25s var(--ease);
+        box-shadow:0 0 14px rgba(255,217,102,.45);flex:none;white-space:nowrap}
+    .req-btn:hover{transform:translateY(-1px);box-shadow:0 0 22px rgba(255,217,102,.7)}
+    .req-btn.show{display:flex}
+    .req-btn svg{width:15px;height:15px}
+    .req-ta{width:100%;min-height:112px;resize:vertical;background:var(--panel);border:1px solid var(--line-2);border-radius:12px;
+        color:var(--fg);font-size:14px;padding:12px 14px;font-family:inherit;outline:none;transition:.25s var(--ease);box-sizing:border-box}
+    .req-ta:focus{border-color:var(--accent)}
+    .req-ta::placeholder{color:var(--fg-3)}
+    .req-status{margin-top:12px;font-size:13px;display:none}
+    .req-status.show{display:block}
+    .req-status.ok{color:#9affc4}
+    .req-status.err{color:#ffb3b3}
+    .score-input{width:100%;background:var(--panel);border:1px solid var(--line-2);border-radius:12px;color:var(--fg);
+        font-size:14px;padding:12px 14px;font-family:inherit;outline:none;transition:.25s var(--ease);box-sizing:border-box;margin-bottom:12px}
+    .score-input:focus{border-color:var(--accent)}
+    .score-input::placeholder{color:var(--fg-3)}
+    .score-drop{width:100%;border:1.5px dashed var(--line-2);border-radius:12px;padding:20px 14px;text-align:center;cursor:pointer;
+        color:var(--fg-3);font-size:13px;transition:.25s var(--ease);box-sizing:border-box}
+    .score-drop:hover{border-color:var(--accent);color:var(--fg-2);background:rgba(184,176,218,.06)}
+    .score-drop.has{border-style:solid;border-color:var(--accent);color:var(--fg)}
+    .score-drop svg{width:22px;height:22px;display:block;margin:0 auto 8px;opacity:.8}
+    .score-thumb{max-width:100%;max-height:120px;border-radius:10px;margin:10px auto 0;display:none}
+    .lb-list{list-style:none;margin:6px 0 0;padding:0;max-height:44vh;overflow-y:auto}
+    .lb-list li{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:10px;
+        background:var(--panel);border:1px solid var(--line);margin-bottom:8px;font-size:14px}
+    .lb-list li .rank{width:26px;height:26px;flex:none;display:grid;place-items:center;border-radius:8px;font-weight:700;font-size:13px;
+        background:var(--bg-3);color:var(--fg-2)}
+    .lb-list li:nth-child(1) .rank{background:linear-gradient(180deg,#ffe08a,#e0a800);color:#14122a}
+    .lb-list li:nth-child(2) .rank{background:linear-gradient(180deg,#e6e6ee,#b9b9c9);color:#14122a}
+    .lb-list li:nth-child(3) .rank{background:linear-gradient(180deg,#e6b98a,#c88a52);color:#14122a}
+    .lb-list li .lb-name{flex:1;font-weight:500}
+    .lb-list li .lb-score{color:var(--accent-lit);font-weight:700;white-space:nowrap}
+</style>
+</head>
+<body>
+
+<div class="sky"></div>
+<canvas class="dither" id="dither"></canvas>
+<div class="stars" id="stars"></div>
+
+<header>
+    <a class="brand" href="#" onclick="return false"><span class="v-logo"><svg viewBox="0 0 174 175"><path d="M87 170 L47 120 Q39 110 45 100 L7 15 Q5 5 15 10 Q57 55 75 105 Q81 120 87 135 Q93 120 99 105 Q117 55 159 10 Q169 5 167 15 L129 100 Q135 110 127 120 Z"/></svg></span>Bakaboiz</a>
+    <div class="search">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="7" cy="7" r="5"/><line x1="13" y1="13" x2="10.5" y2="10.5"/></svg>
+        <input id="search" type="text" placeholder="Search games…" autocomplete="off" spellcheck="false">
+    </div>
+    <div class="seg" id="libSeg">
+        <button data-lib="sussy" class="special" data-testid="lib-sussy-btn">sussybakabois</button>
+        <button data-lib="gnmath" data-testid="lib-gnmath-btn">gnmath</button>
+                <button data-lib="ugs" class="on" data-testid="lib-ugs-btn">UGS</button>
+    </div>
+    <button class="req-btn" id="reqGame" title="Request a game" data-testid="request-game-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="6" y1="11" x2="10" y2="11"/><line x1="8" y1="9" x2="8" y2="13"/><line x1="15" y1="12" x2="15.01" y2="12"/><line x1="18" y1="10" x2="18.01" y2="10"/><path d="M17.32 5H6.68a4 4 0 0 0-3.98 3.59c-.006.052-.01.101-.017.152C2.604 9.416 2 14.456 2 16a3 3 0 0 0 3 3c1 0 1.5-.5 2-1l1.414-1.414A2 2 0 0 1 9.828 16h4.344a2 2 0 0 1 1.414.586L17 18c.5.5 1 1 2 1a3 3 0 0 0 3-3c0-1.545-.604-6.584-.685-7.258-.007-.05-.011-.1-.017-.151A4 4 0 0 0 17.32 5z"/></svg>
+        Request Game
+    </button>
+    <button class="icon-btn" id="reportBtn" title="Report a problem" aria-label="Report a problem" data-testid="report-problem-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+    </button>
+    <button class="icon-btn" id="gear" title="Settings" aria-label="Settings">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+    </button>
+</header>
+
+<main>
+    <div class="chips" id="chips"></div>
+
+    <div id="featWrap" style="display:none">
+        <div class="row-title">Featured</div>
+        <div class="featured" id="featured"></div>
+    </div>
+
+    <div class="row-title" id="gridTitle">All games</div>
+    <div class="grid" id="grid">
+        <div class="status"><div class="spinner"></div>Loading the library…</div>
+    </div>
+</main>
+
+<div class="viewer" id="viewer">
+    <div class="v-bar">
+        <span class="v-title" id="vTitle">Game</span>
+        <span class="v-auth" id="vAuth"></span>
+        <span class="v-sp"></span>
+        <button id="lbBtn" onclick="openLeaderboard()" style="display:none" data-testid="leaderboard-btn">Leaderboard</button>
+        <button onclick="openScore()" data-testid="submit-score-btn">Submit Score</button>
+        <button onclick="viewerFullscreen()">Fullscreen</button>
+        <button onclick="viewerNewTab()">New tab</button>
+        <button class="close" onclick="closeViewer()">Close</button>
+    </div>
+    <iframe id="vFrame" allow="autoplay; fullscreen; pointer-lock; gamepad"></iframe>
+</div>
+
+<div class="overlay" id="settings">
+    <div class="sheet">
+        <h2 id="setTitle" style="display:flex;align-items:center;gap:9px"><span class="v-logo" style="width:20px;height:20px"><svg viewBox="0 0 174 175"><path d="M87 170 L47 120 Q39 110 45 100 L7 15 Q5 5 15 10 Q57 55 75 105 Q81 120 87 135 Q93 120 99 105 Q117 55 159 10 Q169 5 167 15 L129 100 Q135 110 127 120 Z"/></svg></span>Settings</h2>
+        <p class="sub" id="setSub">Set things up how you like. You can reopen this any time with the gear.</p>
+
+        <div class="field">
+            <div class="lab">Game library</div>
+            <div class="opts" id="setLib">
+                <div class="opt on special" data-lib="sussy">sussybakabois<span class="best-tag">the best choice for students & better games</span></div>
+                <div class="opt" data-lib="gnmath">gnmath<br><span style="font-size:11px;color:var(--fg-3)">more known library</span></div>
+                <div class="opt" data-lib="ugs">UGS<br><span style="font-size:11px;color:var(--fg-3)">bigger game library, no icons, and random games</span></div>
+            </div>
+        </div>
+
+        <div class="field">
+            <div class="lab">Accent</div>
+            <div class="colorpick">
+                <input type="color" id="setAccent" value="#b8b0da">
+                <div class="swatches" id="swatches"></div>
+            </div>
+        </div>
+
+        <div class="field">
+            <div class="toggle">
+                <div><div style="font-size:14px">Open games in a blank tab</div><div class="t-desc">Cloak: launches into an about:blank tab.</div></div>
+                <div class="sw" id="setCloak"></div>
+            </div>
+        </div>
+
+        <div class="field">
+            <div class="toggle">
+                <div><div style="font-size:14px">Ambient effects</div><div class="t-desc">Moon glow &amp; twinkling stars.</div></div>
+                <div class="sw on" id="setFx"></div>
+            </div>
+        </div>
+
+        <button class="btn" id="setSave">Save &amp; continue</button>
+        <button class="btn ghost" id="setClose" style="display:none">Close</button>
+    </div>
+</div>
+
+<div class="overlay" id="sussyDisclaimer">
+    <div class="sheet">
+        <h2><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> Heads Up</h2>
+        <p class="sub">sussybakabois is a big library and I haven't personally tested every game in it, some may be broken, slow, or missing assets. If you run into one that doesn't work, please use the "Report a Problem" button and I'll fix it or pull it from the list.</p>
+        <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--fg-2);margin:10px 2px 4px;cursor:pointer">
+            <input type="checkbox" id="sussyDisclaimerSkip" style="width:16px;height:16px;accent-color:var(--accent)"> Don't show this again
+        </label>
+        <button class="btn" id="sussyDisclaimerOk" data-testid="sussy-disclaimer-ok">Got it, continue</button>
+        <button class="btn ghost" id="sussyDisclaimerCancel" data-testid="sussy-disclaimer-cancel">Cancel</button>
+    </div>
+</div>
+
+<div class="overlay" id="reqModal">
+    <div class="sheet">
+        <h2><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="6" y1="11" x2="10" y2="11"/><line x1="8" y1="9" x2="8" y2="13"/><line x1="15" y1="12" x2="15.01" y2="12"/><line x1="18" y1="10" x2="18.01" y2="10"/><path d="M17.32 5H6.68a4 4 0 0 0-3.98 3.59c-.006.052-.01.101-.017.152C2.604 9.416 2 14.456 2 16a3 3 0 0 0 3 3c1 0 1.5-.5 2-1l1.414-1.414A2 2 0 0 1 9.828 16h4.344a2 2 0 0 1 1.414.586L17 18c.5.5 1 1 2 1a3 3 0 0 0 3-3c0-1.545-.604-6.584-.685-7.258-.007-.05-.011-.1-.017-.151A4 4 0 0 0 17.32 5z"/></svg> Request a Game</h2>
+        <p class="sub">Let us know what game you'd like added to sussybakabois and we'll take a look.</p>
+        <textarea class="req-ta" id="reqDesc" placeholder="Enter the game name and any details (link, platform, why you want it)…" spellcheck="false" data-testid="request-game-input"></textarea>
+        <div class="req-status" id="reqStatus" data-testid="request-game-status"></div>
+        <button class="btn" id="reqSubmit" data-testid="request-game-submit">Submit Request</button>
+        <button class="btn ghost" id="reqCancel" data-testid="request-game-cancel">Cancel</button>
+    </div>
+</div>
+
+<div class="overlay" id="reportModal">
+    <div class="sheet">
+        <h2><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> Report a Problem</h2>
+        <p class="sub">Found a broken game or a bug? Tell us what happened and we'll fix it.</p>
+        <textarea class="req-ta" id="reportDesc" placeholder="Describe the issue (which game, what went wrong)…" spellcheck="false" data-testid="report-problem-input"></textarea>
+        <div class="req-status" id="reportStatus" data-testid="report-problem-status"></div>
+        <button class="btn" id="reportSubmit" data-testid="report-problem-submit">Submit Report</button>
+        <button class="btn ghost" id="reportCancel" data-testid="report-problem-cancel">Cancel</button>
+    </div>
+</div>
+
+<div class="overlay" id="scoreModal">
+    <div class="sheet">
+        <h2><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg> Submit Your Score</h2>
+        <p class="sub">Submitting a score for <b id="scoreGameName">this game</b>. Enter your name and upload a screenshot proving your score.</p>
+        <input type="text" class="score-input" id="scoreName" placeholder="Your name" maxlength="24" spellcheck="false" data-testid="submit-score-name">
+        <div class="score-drop" id="scoreDrop" data-testid="submit-score-drop">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            <span id="scoreDropText">Upload a screenshot of your score</span>
+            <img class="score-thumb" id="scoreThumb" alt="">
+        </div>
+        <input type="file" id="scoreFile" accept="image/*" style="display:none" data-testid="submit-score-file">
+        <div class="req-status" id="scoreStatus" data-testid="submit-score-status"></div>
+        <button class="btn" id="scoreSubmit" data-testid="submit-score-submit">Submit Score</button>
+        <button class="btn ghost" id="scoreCancel" data-testid="submit-score-cancel">Cancel</button>
+    </div>
+</div>
+
+<div class="overlay" id="lbModal">
+    <div class="sheet">
+        <h2><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg> Top 8 Scores</h2>
+        <p class="sub"><b id="lbTitle">Leaderboard</b> — the current high scores. Think you can beat them?</p>
+        <ol class="lb-list" id="lbList" data-testid="leaderboard-list"></ol>
+        <button class="btn" id="lbSubmit" data-testid="leaderboard-submit-score">Submit Your Score</button>
+        <button class="btn ghost" id="lbClose" data-testid="leaderboard-close">Close</button>
+    </div>
+</div>
+
+<script>
+/* SUSSYBAKABOIS_LIB_INJECTED */
+(function(){
+"use strict";
+
+var mem={};
+var LS={
+    get:function(k){ try{return localStorage.getItem(k);}catch(e){return mem[k]||null;} },
+    set:function(k,v){ try{localStorage.setItem(k,v);}catch(e){mem[k]=String(v);} }
+};
+
+var CFG={
+    sussyBase:"https://cdn.jsdelivr.net/gh/SenpaiX1/mjtymkty@main",
+    zones:"https://cdn.jsdelivr.net/gh/freebuisness/assets@latest/zones.json",
+    zonesFallback:"https://cdn.jsdelivr.net/gh/gn-math/assets@main/zones.json",
+    covers:"https://cdn.jsdelivr.net/gh/freebuisness/covers@main",
+    coversFallback:"https://cdn.jsdelivr.net/gh/gn-math/covers@main",
+    html:"https://cdn.jsdelivr.net/gh/freebuisness/html@main",
+     htmlFallback:"https://cdn.jsdelivr.net/gh/gn-math/html@main",
+     ugsBase:"https://cdn.jsdelivr.net/npm/ugs-singlefiles@1.0.6/UGS-Files/"
+};
+function resolve(u){ return String(u||"").replace("{COVER_URL}",CFG.covers).replace("{HTML_URL}",CFG.html); }
+function resolveFb(u){ return String(u||"").replace("{COVER_URL}",CFG.coversFallback).replace("{HTML_URL}",CFG.htmlFallback); }
+
+var savedLib=LS.get("sf-lib");
+var S={ games:[], library:savedLib==="lumin"?"ugs":(savedLib||"ugs"), cat:"all", current:null };
+
+var $=function(id){return document.getElementById(id);};
+var grid=$("grid"), chipsEl=$("chips"), searchEl=$("search"),
+    viewer=$("viewer"), vFrame=$("vFrame"), vTitle=$("vTitle"), vAuth=$("vAuth"),
+    settings=$("settings"), gridTitle=$("gridTitle"), reqModal=$("reqModal"), reportModal=$("reportModal"), scoreModal=$("scoreModal"), lbModal=$("lbModal");
+
+(function(){
+    var h="", n=64;
+    for(var i=0;i<n;i++){
+        var s=(Math.random()*1.5+.4).toFixed(2);
+        h+='<i style="left:'+(Math.random()*100).toFixed(1)+'%;top:'+(Math.random()*100).toFixed(1)+
+           '%;width:'+s+'px;height:'+s+'px;--d:'+(Math.random()*4+2).toFixed(1)+'s;animation-delay:'+(-Math.random()*6).toFixed(1)+'s"></i>';
+    }
+    $("stars").innerHTML=h;
+})();
+
+async function fetchZones(){
+    try{
+        var r=await fetch(CFG.zones+"?t="+Date.now());
+        if(!r.ok) throw 0;
+        return await r.json();
+    }catch(e){
+        var r2=await fetch(CFG.zonesFallback+"?t="+Date.now());
+        if(!r2.ok) throw new Error("Couldn't reach the game catalog.");
+        return await r2.json();
+    }
+}
+async function loadGnmath(){
+    var games=await fetchZones();
+    if(games[0]) games[0].featured=true;
+    return games;
+}
+function ugsName(file){
+    var name=String(file||"").replace(/\.html$/i,"").replace(/^cl/i,"");
+    name=name.replace(/[_-]+/g," ").replace(/([a-z])([A-Z])/g,"$1 $2");
+    name=name.replace(/\s+/g," ").trim();
+    return name.replace(/\b\w/g,function(c){return c.toUpperCase();})||"UGS Game";
+}
+function ugsLetter(name){ return String(name||"U").trim().charAt(0).toUpperCase()||"U"; }
+function ugsType(file){
+    var name=String(file||"").toLowerCase();
+    if(/flash|ruffle|swf/.test(name)) return "Flash";
+    if(/emulator|snes|gba|gbc|gameboy|n64|dos|arcade|genesis|megadrive|sega|ps1|psx|psp|dreamcast|atari|coleco|mame|neo.?geo|mastersystem|(?:^|[^a-z])nes(?:[^a-z]|$)|nes$/.test(name)
+        && !/(bones|planes|pines|machines|indianajones)$/.test(name)){
+        return "Emulator";
+    }
+    return "HTML";
+}
+async function loadUGS(){
+    var r=await fetch(CFG.ugsBase+"?t="+Date.now());
+    if(!r.ok) throw new Error("Couldn't reach the UGS game catalog.");
+    var html=await r.text();
+    var doc=new DOMParser().parseFromString(html,"text/html");
+    var links=Array.prototype.map.call(doc.querySelectorAll("a[href]"),function(a){ return a.getAttribute("href")||""; })
+        .filter(function(href){ return /\.html(?:[?#].*)?$/i.test(href); })
+        .map(function(href){
+            var url=new URL(href,CFG.ugsBase).href;
+            var file=decodeURIComponent(url.substring(url.lastIndexOf("/")+1).split(/[?#]/)[0]);
+            return {file:file,url:url};
+        })
+        .filter(function(g){ return g.file && g.url.indexOf(CFG.ugsBase)===0; });
+    var seen={};
+    links=links.filter(function(g){ if(seen[g.url]) return false; seen[g.url]=true; return true; });
+    if(!links.length) throw new Error("The UGS catalog did not contain any games.");
+    return links.map(function(g){
+        var name=ugsName(g.file);
+        return {id:g.file,name:name,url:g.url,special:[ugsType(g.file)],_ugs:true};
+    });
+}
+
+var SUSSY_GAMES=[{"id":"10mins","name":"10 Minutes Till Dawn","ext":"jpg"},{"id":"10bulls","name":"10 More Bullets","ext":"png"},{"id":"10-103","name":"10-103","ext":"png"},{"id":"acidbun","name":"Acid Bunny","ext":"jpg"},{"id":"adventure-capitalist","name":"Adventure Capitalist","ext":"jpg"},{"id":"AdventureDrivers","name":"Adventure Drivers","ext":"png"},{"id":"amazing","name":"Amazing Strange Rope Police","ext":"jpg"},{"id":"sussys","name":"Among Us","ext":"png"},{"id":"AngryBirdShowdown","name":"Angry Birds","ext":"png"},{"id":"angry-birds-epic","name":"Angry Birds Epic","ext":"png","url":"https://bakawaka.ai1490.com/games/Epic/index.html"},{"id":"backr","name":"Backrooms","ext":"png"},{"id":"badpiggies","name":"Bad Piggies","ext":"jpg"},{"id":"clbadtimesim","name":"Badtime Simulator","ext":"png"},{"id":"balatro","name":"Balatro","ext":"jpg"},{"id":"baldiboi","name":"Baldi Basic","ext":"png"},{"id":"clbaldiepstein","name":"Baldi Jeffrey","ext":"png"},{"id":"clbaseballbros","name":"Base Ball Bros","ext":"png"},{"id":"clgooglebaseball","name":"Baseball","ext":"png"},{"id":"basketbros","name":"Basketball Bros","ext":"png"},{"id":"clbasketrandom","name":"Basketball Random","ext":"png"},{"id":"clbasketballstars","name":"Basketball Stars","ext":"jpg"},{"id":"basketsuper","name":"Basketball Superstars","ext":"png"},{"id":"beachbox","name":"Beach Boxing Simulator","ext":"png"},{"id":"beeswarmm","name":"Bee Swarm Sim","ext":"png"},{"id":"big-tower-tiny-square","name":"Big Tower Tiny Square","ext":"jpg"},{"id":"big-tower-tiny-square-2","name":"Big Tower Tiny Square 2","ext":"jpg"},{"id":"clbindingofisaccsheeptime","name":"Binding Of Isacc","ext":"jpg"},{"id":"bitlife","name":"Bitlife","ext":"jpg"},{"id":"clblackjackbattle","name":"Black Jack","ext":"jpg"},{"id":"blox-blast","name":"Blox Blast","ext":"png"},{"id":"clbobasimulator","name":"Boba Simulator","ext":"png"},{"id":"bounce-master","name":"Bounce Master","ext":"png"},{"id":"bowmasters","name":"Bowmasters","ext":"jpg"},{"id":"brawlstar","name":"Brawl Star","ext":"jpg"},{"id":"Brotato","name":"Brotato","ext":"png"},{"id":"BuildNow.gg","name":"Buildnow.Gg","ext":"png"},{"id":"clburritobisonlaunchalibre","name":"Burrito Bison","ext":"png"},{"id":"cash-flow","name":"Cash Flow","ext":"png"},{"id":"Celeste","name":"Celeste","ext":"jpg"},{"id":"viking","name":"Clash Of Vikings","ext":"jpg"},{"id":"climb-over","name":"Climb Over","ext":"jpg"},{"id":"clusterushh","name":"Cluster Rush","ext":"jpg"},{"id":"Cookie","name":"Cookie Clicker","ext":"jpg"},{"id":"crazy","name":"Crazy Cattle 3D","ext":"jpg"},{"id":"crossy","name":"Crossyroad","ext":"png"},{"id":"csgobrocase","name":"Csgo Cases","ext":"png"},{"id":"cupheaad","name":"Cuphead","ext":"png"},{"id":"deadly-descent","name":"Deadly Descent"},{"id":"deltarun","name":"Deltarune","ext":"jpg"},{"id":"doodlejump","name":"Doodle Jump","ext":"png"},{"id":"cldouchebagworkou","name":"Douchebag Workout","ext":"png"},{"id":"cldouchebagworkout2","name":"Douchebag Workout 2","ext":"png"},{"id":"dh","name":"Drift Hunters","ext":"jpg"},{"id":"drivemad","name":"Drive Mad","ext":"jpg"},{"id":"clducklife","name":"Duck Life 1","ext":"png"},{"id":"clducklife2","name":"Duck Life 2","ext":"jpg"},{"id":"clducklife3","name":"Duck Life 3","ext":"jpg"},{"id":"clducklife4","name":"Duck Life 4","ext":"jpg"},{"id":"clducklfe5","name":"Duck Life 5","ext":"png"},{"id":"clducklifebattle","name":"Duck Life Battle","ext":"png"},{"id":"clducklifespace","name":"Duck Life Space","ext":"png"},{"id":"dumway","name":"Dumb Ways To Die","ext":"png"},{"id":"dune","name":"Dune","ext":"jpg"},{"id":"earn-to-die","name":"Earn To Die","ext":"png"},{"id":"esim","name":"Edys Car Simulator","ext":"jpg"},{"id":"Endoparasitic","name":"Endoparasitic","ext":"png"},{"id":"Endoparasitic2","name":"Endoparasitic 2","ext":"png"},{"id":"clescaperoad","name":"Escape Road","ext":"jpg"},{"id":"clescaperoad-2","name":"Escape Road 2","ext":"png"},{"id":"escape","name":"Escaping Prison","ext":"png"},{"id":"response","name":"Fear Response","ext":"png"},{"id":"clfearstofathomhomealone","name":"Fears To Fathom","ext":"png"},{"id":"clfireboyandwatergirl","name":"Fireboy&Watergirl","ext":"png"},{"id":"fnafcandies","name":"Five Nights At Candies","ext":"png"},{"id":"clfivenightsatepsteins","name":"Five Nights At Epsteins","ext":"png"},{"id":"flappy-bird","name":"Flappy Bird","ext":"png"},{"id":"fleeing","name":"Fleeing Complex","ext":"png"},{"id":"Fnaf1","name":"Fnaf 1","ext":"jpg"},{"id":"Fnaf2","name":"Fnaf 2","ext":"jpg"},{"id":"Fnaf3","name":"Fnaf 3","ext":"jpg"},{"id":"fnaf3d","name":"Fnaf 3D","ext":"jpg"},{"id":"Fnaf4","name":"Fnaf 4","ext":"jpg"},{"id":"fcg","name":"Fnaf Custom","ext":"jpg"},{"id":"clfootballbros","name":"Football Bros","ext":"png"},{"id":"clfridaynightfunkin","name":"Fridaynight Funkin","ext":"jpg"},{"id":"fruit","name":"Fruit Ninja","ext":"png"},{"id":"funnyshooter-2","name":"Funnyshooter 2","ext":"png","url":"https://storage.googleapis.com/test-41376.appspot.com/fs2.html"},{"id":"gas-station","name":"Gas Station","ext":"png"},{"id":"gateboi-1","name":"Gateway Shootout","ext":"png"},{"id":"geometry","name":"Geometry Dash Lite","ext":"png"},{"id":"geovibez","name":"Geomtry Vibe","ext":"png"},{"id":"Gladihoppers","name":"Gladihoppers","ext":"jpg"},{"id":"golf-orbit","name":"Golf Orbit","ext":"png"},{"id":"Google_Feud","name":"Google Fued","ext":"jpg"},{"id":"gsnake","name":"Google Snake","ext":"png"},{"id":"Granny","name":"Granny","ext":"jpg"},{"id":"gran2","name":"Granny 2","ext":"jpg"},{"id":"grave","name":"Grave","ext":"png"},{"id":"gunbin","name":"Gun Spin","ext":"png"},{"id":"gym-simulator","name":"Gym Simulator","ext":"jpg"},{"id":"HollowKnight","name":"Hallow Knight","ext":"png"},{"id":"happy-wheels","name":"Happy Wheels","ext":"png"},{"id":"hard","name":"Hardware Tycoon","ext":"png"},{"id":"clhillclimbracinglite","name":"Hill Climb Racing","ext":"png"},{"id":"clhobo","name":"Hobo 1","ext":"png"},{"id":"clhobo2","name":"Hobo 2","ext":"png"},{"id":"clhobo3","name":"Hobo 3","ext":"png"},{"id":"clhobo4","name":"Hobo 4","ext":"png"},{"id":"hole","name":"Hole.io","ext":"png"},{"id":"hotdawg","name":"Hot Dog Bush","ext":"jpg"},{"id":"runny","name":"Hotline Miami","ext":"png"},{"id":"houseof","name":"House Of Hazards","ext":"png"},{"id":"clhoverracerdrive","name":"Hover Racer Drive","ext":"jpg"},{"id":"aquapark","name":"Idle Aqua Park","ext":"png"},{"id":"ship","name":"Infiltraiting The Airship","ext":"jpg"},{"id":"icraft","name":"Infinite Craft","ext":"jpg"},{"id":"cljacksmithencryptedorsmthn","name":"Jacksmith","ext":"jpg"},{"id":"Jetpack","name":"Jetpack Joyride","ext":"jpg"},{"id":"Karlson","name":"Karlson","ext":"jpg"},{"id":"kartbros","name":"Kartbros","ext":"jpg"},{"id":"clkilltheiceagebabyadventure","name":"Kill The Ice Age Baby","ext":"png"},{"id":"Kindergarten","name":"Kindergarten","ext":"png"},{"id":"Kindergarten_2","name":"Kindergarten 2","ext":"jpg"},{"id":"Kindergarten_3","name":"Kindergarten 3","ext":"jpg"},{"id":"fly2","name":"Learn 2 Fly 2","ext":"jpg"},{"id":"Learn2Fly3","name":"Learn To Fly 3","ext":"jpg"},{"id":"legobat","name":"Lego Batman","ext":"jpg"},{"id":"clleveldevil","name":"Level Devil","ext":"png"},{"id":"cllittlealchemy2","name":"Little Alchemy 2","ext":"png"},{"id":"m5fixed","name":"M5 Highway Racer","ext":"png"},{"id":"madalinstuntcarsfixed","name":"Madalin Stunt Cars","ext":"png"},{"id":"clsupermarioallstars","name":"Mario Allstars","ext":"png"},{"id":"melon-sandbox","name":"Melon Sandbox","ext":"png"},{"id":"tinyfishing","name":"Minecraft","ext":"png"},{"id":"monkeydoi","name":"Monkey Mart","ext":"jpg"},{"id":"monstertruckk","name":"Monster Tracks","ext":"png"},{"id":"mortal","name":"Mortal Kombat","ext":"jpg"},{"id":"moto","name":"Moto X3M 2","ext":"jpg"},{"id":"motopool","name":"Moto X3M Pool","ext":"jpg"},{"id":"motospook","name":"Moto X3M Spooky","ext":"jpg"},{"id":"motowinter","name":"Moto X3M Winter","ext":"jpg"},{"id":"clmrracer","name":"Mr Racer","ext":"png"},{"id":"kingsbings","name":"Murder","ext":"jpg"},{"id":"neon-blasters","name":"Neon Blasters","ext":"jpg"},{"id":"nimrod","name":"Nimrods","ext":"jpg"},{"id":"clobbyrainbowtower","name":"Obby Rainbow Tower","ext":"png"},{"id":"clovooo","name":"Ovo","ext":"png"},{"id":"clovo2","name":"Ovo 2","ext":"png"},{"id":"clpapassushiria","name":"Papa Sushiria","ext":"jpg"},{"id":"clpapascheeseria","name":"Papa's Cheesria","ext":"png"},{"id":"clpapadonut","name":"Papa's Donuteria","ext":"png"},{"id":"popfreeze","name":"Papa's Freezeria","ext":"png"},{"id":"clpapaspastaria","name":"Papa's Pastaria","ext":"png"},{"id":"papa","name":"Papa's Pizzaria","ext":"jpg"},{"id":"tacosus","name":"Papa's Tacomia","ext":"png"},{"id":"doggydog","name":"Papa's Hot Doggeria","ext":"png"},{"id":"paper-flight","name":"Paper Flight","ext":"jpg"},{"id":"papper","name":"Paper.io","ext":"jpg"},{"id":"ping","name":"Ping Pong","ext":"png"},{"id":"plagincc","name":"Plague INC REAL","ext":"jpg"},{"id":"plink","name":"Plinko","ext":"png"},{"id":"clpokeplatinum","name":"Pokemon Platnium","ext":"png"},{"id":"Red","name":"Pokemon Red","ext":"jpg"},{"id":"xy","name":"Pokemon X&Y","ext":"jpg"},{"id":"poker","name":"Poker","ext":"jpg"},{"id":"polybuild","name":"Polybuild","ext":"jpg"},{"id":"poly2","name":"Polytrack","ext":"png"},{"id":"pushyy","name":"Push Your Luck","ext":"png"},{"id":"clpvz2gardenless","name":"Pvz Gardenless","ext":"png"},{"id":"clraftwars","name":"Raft Wars","ext":"png"},{"id":"clraftwars2","name":"Raft Wars 2","ext":"png"},{"id":"ragdoll","name":"Ragdoll Archers","ext":"jpg"},{"id":"radghit","name":"Ragdoll Hit","ext":"png"},{"id":"rally","name":"Rally Point","ext":"png"},{"id":"reboil","name":"Recoil","ext":"png"},{"id":"clredball","name":"Red Ball 1","ext":"png"},{"id":"clredball2","name":"Red Ball 2","ext":"jpg"},{"id":"clredball3","name":"Red Ball 3","ext":"jpg"},{"id":"clredball4","name":"Red Ball 4","ext":"png"},{"id":"resievi2","name":"Resident Evil 2","ext":"png"},{"id":"retro","name":"Retro Bowl","ext":"jpg"},{"id":"clretrobowlcollege","name":"Retrobowl College","ext":"png"},{"id":"Riddle_School","name":"Riddle School","ext":"png"},{"id":"clriddleschool2","name":"Riddle School 2","ext":"png"},{"id":"clriddleschool3","name":"Riddle School 3","ext":"jpg"},{"id":"clriddleschool4","name":"Riddle School 4","ext":"jpg"},{"id":"riddleschool5","name":"Riddle School 5","ext":"png"},{"id":"lyferoblox","name":"Roblox","ext":"png"},{"id":"rockd","name":"Rocket Soccer Derby","ext":"jpg"},{"id":"rooftop","name":"Rooftop Snipers","ext":"png"},{"id":"rooftop2","name":"Rooftop Snipers 2","ext":"jpg"},{"id":"runboy","name":"Run 3","ext":"png"},{"id":"shippy","name":"Shipo.io","ext":"png"},{"id":"silentbill","name":"Silent Hill (PS EDITION)","ext":"ico"},{"id":"clskinwalker","name":"Skinwalker","ext":"png"},{"id":"slenderm","name":"Slenderman","ext":"png"},{"id":"slither-io","name":"Slither.io","ext":"png"},{"id":"Slope","name":"Slope","ext":"jpg"},{"id":"clslope2player","name":"SLOPE 2 Player","ext":"png"},{"id":"slowroad","name":"Slowroad","ext":"jpg"},{"id":"clasmallworldcup","name":"Small World Cup","ext":"png"},{"id":"Snow","name":"Snow Rider 3D","ext":"jpg"},{"id":"solar","name":"Solar Smash","ext":"png"},{"id":"clsoniccolors","name":"Sonic","ext":"png"},{"id":"Sonic_CD_gn-math","name":"Sonic Cd","ext":"png"},{"id":"clfnfsonicexe4","name":"Sonic Exe","ext":"png"},{"id":"golf","name":"Sort The Court","ext":"jpg"},{"id":"stack","name":"Stack","ext":"png"},{"id":"snowb","name":"State.io","ext":"png"},{"id":"jemjj","name":"Steal The Diamond","ext":"png"},{"id":"clstickmanhook","name":"Stickman Hook","ext":"png"},{"id":"clstickmankombat2d","name":"Stickman Kombat","ext":"png"},{"id":"clsfk","name":"Strike Force Kitty","ext":"png"},{"id":"clsfk2","name":"Strike Force Kitty 2","ext":"png"},{"id":"Subway","name":"Subway Surfers","ext":"jpg"},{"id":"success-simulator","name":"Success Simulator","ext":"png"},{"id":"summer-rider-3d","name":"Summer Rider 3D","ext":"jpg"},{"id":"supahot","name":"SuperHot","ext":"png"},{"id":"clnewsupermariobros","name":"Supermariobros","ext":"png"},{"id":"survivorio","name":"Survivor.Io","ext":"png"},{"id":"tabs","name":"Tabs","ext":"png"},{"id":"cltagc3","name":"Tag","ext":"png"},{"id":"tank-stars","name":"Tank Stars","ext":"png"},{"id":"temple","name":"Temple Run2","ext":"jpg"},{"id":"Tetris","name":"Tetris","ext":"png"},{"id":"tgc","name":"Tgc Card","ext":"png"},{"id":"thatsnotmyneighbor","name":"That's Not My Neighbor","ext":"jpg"},{"id":"impossible","name":"The Impossible Quiz","ext":"jpg"},{"id":"CL_Visitor","name":"The Visitor","ext":"png"},{"id":"visitor3","name":"The Visitor 2","ext":"png"},{"id":"visitor2","name":"The Visitor 3","ext":"jpg"},{"id":"worldh","name":"The World's Hardest Game","ext":"png"},{"id":"coming","name":"They Are Coming","ext":"jpg"},{"id":"tombboi","name":"Tomb Of The Mask","ext":"png"},{"id":"trafficracer","name":"Traffic Racer","ext":"png"},{"id":"tung-tung-horror","name":"Tung Tung Horror","ext":"jpg","url":"https://bakawaka.ai1490.com/gamefile/tung.html"},{"id":"clUltimatecardrivingsimulator","name":"Ultimate Car Driving Simulator","ext":"png"},{"id":"ULTRAKILL","name":"Ultrakill","ext":"jpg"},{"id":"clundertale","name":"Undertale","ext":"png"},{"id":"velo","name":"Veloce","ext":"png"},{"id":"vex66","name":"Vex 6","ext":"jpg"},{"id":"vex77","name":"Vex 7","ext":"png"},{"id":"grand_thef_auto_vice_city","name":"Vice City","ext":"png"},{"id":"volleyb","name":"Volleyball Challenge","ext":"png"},{"id":"warboi","name":"War Knights","ext":"png"},{"id":"clwebecomewhatwebehold","name":"We Become What We Behold","ext":"png"},{"id":"wrestlebro","name":"Wrestle Bros","ext":"png"},{"id":"yandre","name":"Yandere Simulator","ext":"jpg"},{"id":"youtube","name":"Youtube","ext":"jpg"},{"id":"clzombotronreboot","name":"Zombotron-Reboot","ext":"png"}];
+async function loadSussy(){
+    if(!Array.isArray(SUSSY_GAMES) || !SUSSY_GAMES.length) throw new Error("sussybakabois catalog not found");
+    return SUSSY_GAMES.map(function(g){ return {
+        id:g.id, name:g.name,
+        cover:g.ext ? (CFG.sussyBase+"/imgs/"+g.id+"."+g.ext) : "",
+        url:g.url || (CFG.sussyBase+"/games/"+g.id+".html"),
+        special:["sussybakabois"], _sussy:true
+    }; });
+}
+
+function loadLibrary(lib,persist){
+    if(lib==="sussy" && LS.get("sf-sussy-ack")!=="1"){
+        var m=$("sussyDisclaimer");
+        m.classList.add("open");
+        m.dataset.pendingLib=lib; m.dataset.pendingPersist=(persist===undefined?"1":(persist?"1":"0"));
+        return;
+    }
+    return doLoadLibrary(lib,persist);
+}
+async function doLoadLibrary(lib,persist){
+    if(persist===undefined) persist=true;
+    if(lib==="ugs" && S.library==="ugs" && S.games.length){ return; }
+    S.library=lib; if(persist) LS.set("sf-lib",lib); S.cat="all";
+    document.querySelectorAll("#libSeg button").forEach(function(b){ b.classList.toggle("on",b.dataset.lib===lib); });
+    $("reqGame").classList.toggle("show",lib==="sussy");
+    grid.innerHTML='<div class="status"><div class="spinner"></div>Loading the '+(lib==="ugs"?"UGS":(lib==="sussy"?"sussybakabois":"gnmath"))+' library…</div>';
+    $("featWrap").style.display="none"; chipsEl.innerHTML="";
+    try{
+        S.games = lib==="ugs" ? await loadUGS() : (lib==="sussy" ? await loadSussy() : await loadGnmath());
+    }catch(e){
+        grid.innerHTML='<div class="status">'+(e.message||"Failed to load games.")+'<br><br>Check your connection and refresh.</div>';
+        return;
+    }
+    buildChips();
+    renderFeatured();
+    render(S.games);
+    searchEl.value="";
+}
+
+function coverOf(g){ return g._ugs ? "" : (g._sussy ? (g.cover||"") : resolve(g.cover)); }
+
+function card(g){
+    var favd = isFav(g.id) ? " on" : "";
+    var nm = esc(g.name||"Game");
+    var data = g._ugs ? 'data-ugs="1"' : 'data-cover="'+esc(coverOf(g))+'" data-fb="'+esc(resolveFb(g.cover))+'"';
+    var fallback = g._ugs ? '<div class="cover-fallback">'+esc(ugsLetter(g.name))+'</div>' : "";
+    return '<div class="card" data-id="'+esc(String(g.id))+'" '+data+' title="'+nm+'">'+
+        '<div class="star'+favd+'" onclick="event.stopPropagation();NF.fav(this,\''+jsStr(g.id)+'\')">★</div>'+
+        fallback+'<img alt="" loading="lazy" decoding="async">'+
+        '<div class="cap">'+nm+'</div></div>';
+}
+function render(list){
+    if(!list.length){ grid.innerHTML='<div class="status">No games found.</div>'; return; }
+    gridTitle.textContent = S.cat==="all" ? "All games" : S.cat;
+    grid.innerHTML=list.map(card).join("");
+    grid.querySelectorAll(".card").forEach(function(c){
+        c.addEventListener("click",function(){ openGame(c.dataset.id); });
+    });
+    observe(grid);
+}
+function renderFeatured(){
+    var feats=S.games.filter(function(g){return g.featured;}).slice(0,1)
+        .concat(S.games.slice(0,10)).filter(function(v,i,a){return a.indexOf(v)===i;}).slice(0,10);
+    if(feats.length<4 || S.library==="ugs" || S.library==="sussy"){ $("featWrap").style.display="none"; return; }
+    var el=$("featured");
+    el.innerHTML=feats.map(function(g){
+        return '<div class="feat-card" data-id="'+esc(String(g.id))+'" data-cover="'+esc(coverOf(g))+'" data-fb="'+esc(resolveFb(g.cover))+'">'+
+            '<img alt="" loading="lazy"><div class="cap">'+esc(g.name||"")+'</div></div>';
+    }).join("");
+    el.querySelectorAll(".feat-card").forEach(function(c){ c.addEventListener("click",function(){ openGame(c.dataset.id); }); });
+    $("featWrap").style.display="block";
+    observe(el);
+}
+
+var io=null;
+function observe(root){
+    if(!("IntersectionObserver" in window)){ root.querySelectorAll("img").forEach(function(img){loadImg(img.parentElement);}); return; }
+    if(!io) io=new IntersectionObserver(function(en){ en.forEach(function(e){ if(e.isIntersecting){ loadImg(e.target); io.unobserve(e.target); } }); },{rootMargin:"400px 0px"});
+    root.querySelectorAll(".card,.feat-card").forEach(function(c){ io.observe(c); });
+}
+function loadImg(c){
+    var img=c.querySelector("img"); if(!img||img.getAttribute("src")) return;
+    if(c.dataset.ugs){ img.style.display="none"; return; }
+    var cover=c.dataset.cover, fb=c.dataset.fb;
+    img.onerror=function(){ img.onerror=null; if(fb&&fb!==cover) img.src=fb; else { img.style.display="none"; c.style.background="var(--bg-3)"; } };
+    if(cover) img.src=cover;
+}
+
+function buildChips(){
+    var tags={};
+    S.games.forEach(function(g){ (g.special||g.tags||[]).forEach(function(t){ if(t){ tags[t]=(tags[t]||0)+1; } }); });
+    var top=Object.keys(tags).sort(function(a,b){return tags[b]-tags[a];}).slice(0,12);
+    var html='<button class="chip on" data-cat="all">All</button>';
+    top.forEach(function(t){ html+='<button class="chip" data-cat="'+esc(t)+'">'+esc(title(t))+'</button>'; });
+    chipsEl.innerHTML=html;
+    chipsEl.querySelectorAll(".chip").forEach(function(ch){
+        ch.addEventListener("click",function(){
+            chipsEl.querySelectorAll(".chip").forEach(function(x){x.classList.remove("on");});
+            ch.classList.add("on"); S.cat=ch.dataset.cat;
+            $("featWrap").style.display = (S.cat==="all"&&S.library!=="ugs"&&S.library!=="sussy") ? "block":"none";
+            render(S.cat==="all" ? S.games : S.games.filter(function(g){ return (g.special||g.tags||[]).indexOf(S.cat)>=0; }));
+        });
+    });
+}
+var searchT;
+searchEl.addEventListener("input",function(){
+    clearTimeout(searchT);
+    searchT=setTimeout(function(){
+        var q=searchEl.value.trim().toLowerCase();
+        if(!q){ render(S.cat==="all"?S.games:S.games.filter(function(g){return (g.special||g.tags||[]).indexOf(S.cat)>=0;})); return; }
+        $("featWrap").style.display="none";
+        render(S.games.filter(function(g){ return String(g.name||"").toLowerCase().indexOf(q)>=0; }));
+    },160);
+});
+
+function favs(){ try{ return JSON.parse(LS.get("sf-favs")||"[]"); }catch(e){ return []; } }
+function isFav(id){ return favs().indexOf(String(id))>=0; }
+window.NF={ fav:function(el,id){
+    id=String(id); var f=favs(), i=f.indexOf(id);
+    if(i>=0){ f.splice(i,1); el.classList.remove("on"); } else { f.push(id); el.classList.add("on"); }
+    LS.set("sf-favs",JSON.stringify(f));
+}};
+
+async function openGame(id){
+    var g=S.games.find(function(x){return String(x.id)===String(id);});
+    if(!g) return;
+    vTitle.textContent=g.name||"Game";
+    vAuth.textContent=g._ugs ? "via UGS" : (g.author?("by "+g.author):"");
+    S.leaderboard=findLeaderboard(g.name);
+    $("lbBtn").style.display=S.leaderboard?"":"none";
+    vFrame.removeAttribute("srcdoc"); vFrame.removeAttribute("src");
+    viewer.classList.add("open");
+
+    if(g._ugs){
+        try{
+            var ur=await fetch(g.url+"?t="+Date.now());
+            if(!ur.ok) throw new Error("Failed to load game ("+ur.status+")");
+            var uh=await ur.text();
+            var uBase='<base href="'+g.url.substring(0,g.url.lastIndexOf("/")+1)+'">';
+            if(/<base[^>]*>/i.test(uh)){
+                uh=uh.replace(/<base[^>]*>/i,function(m){ return m; });
+            }else{
+                uh=/<head[^>]*>/i.test(uh) ? uh.replace(/<head[^>]*>/i,function(m){return m+uBase;}) : uBase+uh;
+            }
+            vFrame.removeAttribute("sandbox");
+            vFrame.srcdoc=uh; S.current={type:"ugs",url:g.url,html:uh};
+        }catch(e){ alert("Load failed: "+(e.message||e)); closeViewer(); }
+        if(prefs().cloak){ viewerNewTab(); }
+        return;
+    }
+    if(g._sussy){
+        try{
+            var sr=await fetch(g.url+"?t="+Date.now());
+            if(!sr.ok) throw new Error("Failed to load game ("+sr.status+")");
+            var sh=await sr.text();
+            var sBase='<base href="'+g.url.substring(0,g.url.lastIndexOf("/")+1)+'">';
+            sh=/<head[^>]*>/i.test(sh) ? sh.replace(/<head[^>]*>/i,function(m){return m+sBase;}) : sBase+sh;
+            vFrame.setAttribute("sandbox","allow-scripts allow-forms allow-pointer-lock allow-popups allow-popups-to-escape-sandbox allow-orientation-lock allow-same-origin");
+            vFrame.srcdoc=sh;
+            S.current={type:"sussy",url:g.url,html:sh};
+        }catch(e){ alert("Load failed: "+(e.message||e)); closeViewer(); return; }
+        if(prefs().cloak){ viewerNewTab(); }
+        return;
+    }
+    if(g.url && g.url.indexOf("http")===0 && g.url.indexOf("{")<0){ window.open(g.url,"_blank"); closeViewer(); return; }
+    try{
+        var primary=resolve(g.url), fb=resolveFb(g.url), h="";
+        try{
+            var r=await fetch(primary+"?t="+Date.now()); if(!r.ok) throw 0;
+            h=await r.text(); if(h.trim().indexOf("Couldn't find the requested file")===0) throw 0;
+        }catch(e){
+            var r2=await fetch(fb+"?t="+Date.now()); if(!r2.ok) throw new Error("Both game sources failed."); h=await r2.text();
+        }
+        vFrame.setAttribute("sandbox","allow-scripts allow-forms allow-pointer-lock allow-popups allow-popups-to-escape-sandbox allow-orientation-lock allow-same-origin");
+        vFrame.srcdoc=h; S.current={type:"gnmath",html:h};
+    }catch(e){ alert("Load failed: "+e.message); closeViewer(); }
+
+    if(prefs().cloak){ viewerNewTab(); }
+}
+window.closeViewer=function(){ viewer.classList.remove("open"); vFrame.removeAttribute("src"); vFrame.removeAttribute("srcdoc"); S.current=null; };
+window.viewerFullscreen=function(){ (vFrame.requestFullscreen||vFrame.webkitRequestFullscreen||function(){}).call(vFrame); };
+window.viewerNewTab=function(){
+    var w=window.open("about:blank","_blank"); if(!w){ alert("Allow pop-ups to open a new tab."); return; }
+    try{
+        w.document.title="Bakaboiz";
+        var body='<style>html,body{margin:0;height:100%;background:#05060d;overflow:hidden}iframe{position:fixed;inset:0;width:100%;height:100%;border:0}</style>';
+        if(S.current&&S.current.type==="ugs"&&S.current.html){
+            body+='<iframe id="gameFrame" allow="autoplay;fullscreen;pointer-lock;gamepad"></iframe>';
+            w.document.write(body);
+            var gameFrame=w.document.getElementById("gameFrame");
+            if(gameFrame) gameFrame.srcdoc=S.current.html;
+        }
+        else if(S.current&&S.current.html){ w.document.write(S.current.html); }
+        w.document.close();
+    }catch(e){}
+};
+
+var SWATCH=["#b8b0da","#8fd0ff","#ff9ecf","#9affc4","#ffd98a","#c9a0ff"];
+function prefs(){
+    return { lib:LS.get("sf-lib")==="lumin"?"ugs":(LS.get("sf-lib")||"ugs"), accent:LS.get("sf-accent")||"#b8b0da",
+             cloak:LS.get("sf-cloak")==="1", fx:LS.get("sf-fx")!=="0" };
+}
+function applyAccent(hex){ document.documentElement.style.setProperty("--accent",hex);
+    document.documentElement.style.setProperty("--accent-lit",lighten(hex,26));
+    if(window.NFDither) window.NFDither.setAccent(hex); }
+function applyFx(on){ $("stars").style.display=on?"":"none";
+    if(window.NFDither) window.NFDither.setEnabled(on); }
+
+function openSettings(firstRun){
+    var p=prefs();
+    $("setTitle").innerHTML='<span class="v-logo" style="width:20px;height:20px"><svg viewBox="0 0 174 175"><path d="M87 170 L47 120 Q39 110 45 100 L7 15 Q5 5 15 10 Q57 55 75 105 Q81 120 87 135 Q93 120 99 105 Q117 55 159 10 Q169 5 167 15 L129 100 Q135 110 127 120 Z"/></svg></span>'+(firstRun?"Welcome to Bakaboiz":"Settings");
+    $("setSub").textContent=firstRun?"A quick setup before you play. You can change all of this later.":"Adjust the launcher. Reopen any time with the gear.";
+    document.querySelectorAll("#setLib .opt").forEach(function(o){ o.classList.toggle("on",o.dataset.lib===p.lib); });
+    $("setAccent").value=p.accent;
+    $("setCloak").classList.toggle("on",p.cloak);
+    $("setFx").classList.toggle("on",p.fx);
+    $("swatches").innerHTML=SWATCH.map(function(c){return '<div class="swatch" style="background:'+c+'" data-c="'+c+'"></div>';}).join("");
+    $("swatches").querySelectorAll(".swatch").forEach(function(s){ s.addEventListener("click",function(){ $("setAccent").value=s.dataset.c; applyAccent(s.dataset.c); }); });
+    $("setClose").style.display=firstRun?"none":"block";
+    $("setSave").textContent=firstRun?"Save & continue":"Save";
+    settings.classList.add("open");
+    settings.dataset.first=firstRun?"1":"";
+}
+$("setAccent").addEventListener("input",function(){ applyAccent(this.value); });
+document.querySelectorAll("#setLib .opt").forEach(function(o){
+    o.addEventListener("click",function(){ document.querySelectorAll("#setLib .opt").forEach(function(x){x.classList.remove("on");}); o.classList.add("on"); });
+});
+$("setCloak").addEventListener("click",function(){ this.classList.toggle("on"); });
+$("setFx").addEventListener("click",function(){ this.classList.toggle("on"); });
+
+$("setSave").addEventListener("click",function(){
+    var lib=document.querySelector("#setLib .opt.on").dataset.lib;
+    var accent=$("setAccent").value;
+    var cloak=$("setCloak").classList.contains("on")?"1":"0";
+    var fx=$("setFx").classList.contains("on")?"1":"0";
+    var libChanged = lib!==S.library;
+    LS.set("sf-accent",accent); LS.set("sf-cloak",cloak); LS.set("sf-fx",fx); LS.set("sf-onboarded","1");
+    applyAccent(accent); applyFx(fx==="1");
+    settings.classList.remove("open");
+    if(libChanged || !S.games.length) loadLibrary(lib);
+});
+$("setClose").addEventListener("click",function(){ settings.classList.remove("open"); });
+$("gear").addEventListener("click",function(){ openSettings(false); });
+$("libSeg").addEventListener("click",function(e){ var b=e.target.closest("button"); if(b&&b.dataset.lib!==S.library) loadLibrary(b.dataset.lib); });
+
+var sussyDisclaimer=$("sussyDisclaimer");
+function closeSussyDisclaimer(){ sussyDisclaimer.classList.remove("open"); }
+$("sussyDisclaimerOk").addEventListener("click",function(){
+    if($("sussyDisclaimerSkip").checked) LS.set("sf-sussy-ack","1");
+    var lib=sussyDisclaimer.dataset.pendingLib||"sussy", persist=sussyDisclaimer.dataset.pendingPersist!=="0";
+    closeSussyDisclaimer();
+    doLoadLibrary(lib,persist);
+});
+$("sussyDisclaimerCancel").addEventListener("click",closeSussyDisclaimer);
+sussyDisclaimer.addEventListener("click",function(e){ if(e.target===sussyDisclaimer) closeSussyDisclaimer(); });
+
+var REQ_WEBHOOK="https://discord.com/api/webhooks/1432190089710145618/TlPG2exf7J1ULEMKLSUg-GhsCsB135kJ--9V3YWRe8oCJ8h2i-EpAtTyc3_A7QNYZ-j2";
+function reqStatus(msg,ok){ var s=$("reqStatus"); s.textContent=msg; s.className="req-status show "+(ok?"ok":"err"); }
+function openReq(){ $("reqDesc").value=""; $("reqStatus").className="req-status"; reqModal.classList.add("open"); setTimeout(function(){$("reqDesc").focus();},60); }
+function closeReq(){ reqModal.classList.remove("open"); }
+$("reqGame").addEventListener("click",openReq);
+$("reqCancel").addEventListener("click",closeReq);
+reqModal.addEventListener("click",function(e){ if(e.target===reqModal) closeReq(); });
+$("reqSubmit").addEventListener("click",async function(){
+    var desc=$("reqDesc").value.trim();
+    if(!desc){ reqStatus("Please enter a game request.",false); return; }
+    var btn=this, old=btn.textContent; btn.disabled=true; btn.textContent="Sending…";
+    var payload={embeds:[{title:"\uD83C\uDFAE Game Request \u2014 Bakaboiz",description:desc,color:0x00FF00,timestamp:new Date().toISOString(),
+        fields:[{name:"Library",value:"sussybakabois",inline:true},{name:"Submitted",value:new Date().toLocaleString(),inline:true}],
+        footer:{text:"Bakaboiz Game Request System"}}]};
+    try{
+        var r=await fetch(REQ_WEBHOOK,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
+        if(r.ok||r.status===204){ reqStatus("\u2705 Request submitted successfully!",true); setTimeout(closeReq,2200); }
+        else{ reqStatus("Failed to submit request (HTTP "+r.status+"). Please try again.",false); }
+    }catch(e){ reqStatus("Network error. Check your connection and try again.",false); }
+    btn.disabled=false; btn.textContent=old;
+});
+
+var REPORT_WEBHOOK="https://discord.com/api/webhooks/1420170958664237146/Rv7yjlUskrkMtGpFYoV-kzGloT8G9-gjGFNtyymL4dInSW0Mn_XW6HhW7cfILLkDuaoK";
+function reportStatus(msg,ok){ var s=$("reportStatus"); s.textContent=msg; s.className="req-status show "+(ok?"ok":"err"); }
+function openReport(){ $("reportDesc").value=""; $("reportStatus").className="req-status"; reportModal.classList.add("open"); setTimeout(function(){$("reportDesc").focus();},60); }
+function closeReport(){ reportModal.classList.remove("open"); }
+$("reportBtn").addEventListener("click",openReport);
+$("reportCancel").addEventListener("click",closeReport);
+reportModal.addEventListener("click",function(e){ if(e.target===reportModal) closeReport(); });
+$("reportSubmit").addEventListener("click",async function(){
+    var desc=$("reportDesc").value.trim();
+    if(!desc){ reportStatus("Please describe the problem.",false); return; }
+    var btn=this, old=btn.textContent; btn.disabled=true; btn.textContent="Sending…";
+    var payload={embeds:[{title:"\uD83D\uDC1B Bug Report \u2014 Bakaboiz",description:desc,color:0xFFA500,timestamp:new Date().toISOString(),
+        fields:[{name:"Library",value:S.library||"unknown",inline:true},{name:"Reported",value:new Date().toLocaleString(),inline:true},
+                {name:"User Agent",value:"```"+navigator.userAgent.substring(0,900)+"```",inline:false}],
+        footer:{text:"Bakaboiz Support System"}}]};
+    try{
+        var r=await fetch(REPORT_WEBHOOK,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
+        if(r.ok||r.status===204){ reportStatus("\u2705 Report submitted \u2014 thank you!",true); setTimeout(closeReport,2200); }
+        else{ reportStatus("Failed to send report (HTTP "+r.status+"). Please try again.",false); }
+    }catch(e){ reportStatus("Network error. Check your connection and try again.",false); }
+    btn.disabled=false; btn.textContent=old;
+});
+
+var SCORE_WEBHOOK="https://discord.com/api/webhooks/1420170958664237146/Rv7yjlUskrkMtGpFYoV-kzGloT8G9-gjGFNtyymL4dInSW0Mn_XW6HhW7cfILLkDuaoK";
+var scoreFileObj=null;
+function scoreStatus(msg,ok){ var s=$("scoreStatus"); s.textContent=msg; s.className="req-status show "+(ok?"ok":"err"); }
+window.openScore=function(){
+    if(!S.current){ return; }
+    $("scoreGameName").textContent=(vTitle.textContent||"this game");
+    $("scoreName").value=""; scoreFileObj=null;
+    $("scoreDropText").textContent="Upload a screenshot of your score";
+    $("scoreDrop").classList.remove("has"); $("scoreThumb").style.display="none"; $("scoreThumb").removeAttribute("src");
+    $("scoreStatus").className="req-status";
+    scoreModal.classList.add("open");
+};
+function closeScore(){ scoreModal.classList.remove("open"); }
+$("scoreCancel").addEventListener("click",closeScore);
+scoreModal.addEventListener("click",function(e){ if(e.target===scoreModal) closeScore(); });
+$("scoreDrop").addEventListener("click",function(){ $("scoreFile").click(); });
+$("scoreFile").addEventListener("change",function(){
+    var f=this.files&&this.files[0]; if(!f) return;
+    scoreFileObj=f;
+    $("scoreDropText").textContent=f.name;
+    $("scoreDrop").classList.add("has");
+    var img=$("scoreThumb"); img.src=URL.createObjectURL(f); img.style.display="block";
+});
+$("scoreDrop").addEventListener("dragover",function(e){ e.preventDefault(); this.classList.add("has"); });
+$("scoreDrop").addEventListener("dragleave",function(){ if(!scoreFileObj) this.classList.remove("has"); });
+$("scoreDrop").addEventListener("drop",function(e){
+    e.preventDefault(); var f=e.dataTransfer&&e.dataTransfer.files&&e.dataTransfer.files[0];
+    if(f&&f.type.indexOf("image")===0){ $("scoreFile").files=e.dataTransfer.files;
+        $("scoreFile").dispatchEvent(new Event("change")); }
+});
+$("scoreSubmit").addEventListener("click",async function(){
+    var name=$("scoreName").value.trim();
+    if(!name){ scoreStatus("Please enter your name.",false); return; }
+    if(!scoreFileObj){ scoreStatus("Please upload a screenshot of your score.",false); return; }
+    var game=vTitle.textContent||"Unknown game";
+    var btn=this, old=btn.textContent; btn.disabled=true; btn.textContent="Sending…";
+    var payload={username:"Bakaboiz Score Reporter",embeds:[{title:"\uD83C\uDFC6 New Score Submission",
+        description:"**"+name+"** just submitted a score for **"+game+"**!",color:65280,timestamp:new Date().toISOString(),
+        fields:[{name:"Game",value:game,inline:true},{name:"Player",value:name,inline:true},
+                {name:"Submitted",value:new Date().toLocaleString(),inline:false}],
+        footer:{text:"Bakaboiz Score System"}}]};
+    try{
+        var fd=new FormData();
+        fd.append("payload_json",JSON.stringify(payload));
+        fd.append("file",scoreFileObj,scoreFileObj.name);
+        var r=await fetch(SCORE_WEBHOOK,{method:"POST",body:fd});
+        if(r.ok||r.status===204){ scoreStatus("\uD83C\uDFC6 Score submitted \u2014 good luck on the leaderboard!",true); setTimeout(closeScore,2400); }
+        else{ scoreStatus("Failed to submit score (HTTP "+r.status+"). Please try again.",false); }
+    }catch(e){ scoreStatus("Network error. Check your connection and try again.",false); }
+    btn.disabled=false; btn.textContent=old;
+});
+
+
+var LEADERBOARDS=[
+    {kw:["jetpack"],title:"JetPack",scores:[["TyC","8650m"],["JackB","5969m"],["Hasty","5411"],["Cade","5054"],["Ty","4937m"],["LucasB","3622"],["Vann","2468m"]]},
+    {kw:["slope"],title:"Slope",scores:[["Miron","537"],["Zeb","438"],["CollinK","167"],["Sebastian","130"],["GiovaniM","127"],["IsaacL","126"],["LukeB","121"],["JaydenM","111"]]},
+    {kw:["snow rider","snowrider"],title:"SnowRider",scores:[["FinnB","266"],["Cade","192"],["IsaacL","165"],["MalMal","158"],["Liam","153"],["CollinK","145"],["Jmoney","135"],["JacksonB","132"]]},
+    {kw:["temple run","temple"],title:"Temple Run",scores:[["Sebastian","85,838"],["CollinK","79,380"],["Zeb","49,681"],["Liam","1,862"]]},
+    {kw:["subway"],title:"Subway",scores:[["CollinK","39443"],["Ty","28,312"],["Nolan","22584"],["Alden","5281"],["Khun","150"]]},
+    {kw:["flappy"],title:"Flappy Bird",scores:[["Nolan","404"],["Isaac L","210"],["Isaacc","199"],["CollinK","188"],["kolbsters","173"],["Hasty","164"],["BrooksR","118"],["Parker","75"]]},
+    {kw:["crossy"],title:"Crossy",scores:[["CollinK","527"],["IsaacL","355"],["isaacc","299"],["Alden","244"],["Nolan","225"],["IsaacH","220"],["Esau","174"],["kolbsters","161"]]},
+    {kw:["snake"],title:"Snake",scores:[["Alden","252"],["Dylan","252"],["Zeb","190"],["LucasB","56"],["Angel","55"],["BrooksR","51"],["Liam","42"],["Ashon","28"]]},
+    {kw:["tetris"],title:"Tetris",scores:[["Keith","89,085"],["Nolan","28,980"],["Khun","20"]]},
+    {kw:["baseball"],title:"Baseball",scores:[["CollinK","83"],["Hasty","57"],["AdamS","44"],["Liam","30"],["Rpelly","39"],["LucasC","28"],["Khun","20"],["Pierce","14"]]},
+    {kw:["neon blast","neon"],title:"Neon Blast",scores:[["Khun","10"]]},
+    {kw:["stack"],title:"Stack",scores:[["Penelope","86"],["TyC","70"],["Keith","63"],["Hannah","44"],["ReedM","41"],["Khun","10"]]},
+    {kw:["dune"],title:"Dune",scores:[["TyC","88"],["Penelope","35"],["Khun","10"]]},
+    {kw:["hover racer","hover"],title:"Hover Racer",scores:[["Khun","1067m"]]}
+];
+function findLeaderboard(name){
+    var n=String(name||"").toLowerCase();
+    for(var i=0;i<LEADERBOARDS.length;i++){
+        var kws=LEADERBOARDS[i].kw;
+        for(var j=0;j<kws.length;j++){ if(n.indexOf(kws[j])>=0) return LEADERBOARDS[i]; }
+    }
+    return null;
+}
+window.openLeaderboard=function(){
+    var lb=S.leaderboard; if(!lb) return;
+    $("lbTitle").textContent=lb.title;
+    $("lbList").innerHTML=lb.scores.map(function(s,i){
+        return '<li><span class="rank">'+(i+1)+'</span><span class="lb-name">'+esc(s[0])+'</span><span class="lb-score">'+esc(s[1])+'</span></li>';
+    }).join("") || '<li class="lb-empty">No scores yet — be the first!</li>';
+    lbModal.classList.add("open");
+};
+function closeLeaderboard(){ lbModal.classList.remove("open"); }
+$("lbClose").addEventListener("click",closeLeaderboard);
+$("lbSubmit").addEventListener("click",function(){ closeLeaderboard(); window.openScore(); });
+lbModal.addEventListener("click",function(e){ if(e.target===lbModal) closeLeaderboard(); });
+
+
+function esc(s){ return String(s==null?"":s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];}); }
+function jsStr(s){ return String(s).replace(/\\/g,"\\\\").replace(/'/g,"\\'"); }
+function title(s){ return String(s).replace(/\w\S*/g,function(t){return t.charAt(0).toUpperCase()+t.slice(1).toLowerCase();}); }
+function lighten(hex,amt){ var m=/^#?([\da-f]{2})([\da-f]{2})([\da-f]{2})$/i.exec(hex); if(!m) return hex;
+    function up(x){ return Math.min(255,parseInt(x,16)+amt).toString(16).padStart(2,"0"); }
+    return "#"+up(m[1])+up(m[2])+up(m[3]); }
+var toastT;
+function toast(msg){
+    var t=$("toast");
+    if(!t){ t=document.createElement("div"); t.id="toast";
+        t.style.cssText="position:fixed;left:50%;bottom:26px;transform:translateX(-50%);z-index:200;background:var(--panel-2);border:1px solid var(--line-2);color:var(--fg);padding:12px 18px;border-radius:12px;font-size:13.5px;box-shadow:0 20px 50px rgba(0,0,0,.5);opacity:0;transition:opacity .3s";
+        document.body.appendChild(t); }
+    t.textContent=msg; t.style.opacity="1"; clearTimeout(toastT); toastT=setTimeout(function(){t.style.opacity="0";},3200);
+}
+document.addEventListener("keydown",function(e){ if(e.key==="Escape"){ if(lbModal.classList.contains("open")) closeLeaderboard(); else if(scoreModal.classList.contains("open")) closeScore(); else if(reqModal.classList.contains("open")) closeReq(); else if(reportModal.classList.contains("open")) closeReport(); else if(sussyDisclaimer.classList.contains("open")) closeSussyDisclaimer(); else if(viewer.classList.contains("open")) closeViewer(); else if(settings.classList.contains("open")&&!settings.dataset.first) settings.classList.remove("open"); } });
+
+(function boot(){
+    var p=prefs();
+    applyAccent(p.accent); applyFx(p.fx);
+    loadLibrary(p.lib);
+    if(LS.get("sf-onboarded")!=="1") openSettings(true);
+})();
+
+})();
+</script>
+
+<script>
+/* Animated dither background (WebGL2) — flow-field fBm noise quantized via 8x8 Bayer matrix */
+(function(){
+    var canvas=document.getElementById("dither");
+    if(!canvas) return;
+    var gl=canvas.getContext("webgl2",{antialias:false,alpha:false,premultipliedAlpha:false});
+    if(!gl){ canvas.style.display="none"; return; }
+
+    var VERT="#version 300 es\n"+
+        "in vec2 aPos; void main(){ gl_Position=vec4(aPos,0.0,1.0); }";
+
+    var FRAG="#version 300 es\n"+
+        "precision highp float;\n"+
+        "out vec4 fragColor;\n"+
+        "uniform vec2 resolution;\n"+
+        "uniform float time;\n"+
+        "uniform float waveSpeed;\n"+
+        "uniform float waveFrequency;\n"+
+        "uniform float waveAmplitude;\n"+
+        "uniform vec3 waveColor;\n"+
+        "uniform vec3 backgroundColor;\n"+
+        "uniform float pixelSize;\n"+
+        "uniform float colorNum;\n"+
+        "vec4 mod289(vec4 x){return x-floor(x*(1.0/289.0))*289.0;}\n"+
+        "vec4 permute(vec4 x){return mod289(((x*34.0)+1.0)*x);}\n"+
+        "vec4 taylorInvSqrt(vec4 r){return 1.79284291400159-0.85373472095314*r;}\n"+
+        "vec2 fade(vec2 t){return t*t*t*(t*(t*6.0-15.0)+10.0);}\n"+
+        "float cnoise(vec2 P){\n"+
+        "  vec4 Pi=floor(P.xyxy)+vec4(0.0,0.0,1.0,1.0);\n"+
+        "  vec4 Pf=fract(P.xyxy)-vec4(0.0,0.0,1.0,1.0);\n"+
+        "  Pi=mod289(Pi);\n"+
+        "  vec4 ix=Pi.xzxz; vec4 iy=Pi.yyww; vec4 fx=Pf.xzxz; vec4 fy=Pf.yyww;\n"+
+        "  vec4 i=permute(permute(ix)+iy);\n"+
+        "  vec4 gx=fract(i*(1.0/41.0))*2.0-1.0;\n"+
+        "  vec4 gy=abs(gx)-0.5; vec4 tx=floor(gx+0.5); gx=gx-tx;\n"+
+        "  vec2 g00=vec2(gx.x,gy.x); vec2 g10=vec2(gx.y,gy.y);\n"+
+        "  vec2 g01=vec2(gx.z,gy.z); vec2 g11=vec2(gx.w,gy.w);\n"+
+        "  vec4 norm=taylorInvSqrt(vec4(dot(g00,g00),dot(g01,g01),dot(g10,g10),dot(g11,g11)));\n"+
+        "  g00*=norm.x; g01*=norm.y; g10*=norm.z; g11*=norm.w;\n"+
+        "  float n00=dot(g00,vec2(fx.x,fy.x)); float n10=dot(g10,vec2(fx.y,fy.y));\n"+
+        "  float n01=dot(g01,vec2(fx.z,fy.z)); float n11=dot(g11,vec2(fx.w,fy.w));\n"+
+        "  vec2 fade_xy=fade(Pf.xy);\n"+
+        "  vec2 n_x=mix(vec2(n00,n01),vec2(n10,n11),fade_xy.x);\n"+
+        "  return 2.3*mix(n_x.x,n_x.y,fade_xy.y);\n"+
+        "}\n"+
+        "const int OCTAVES=4;\n"+
+        "float fbm(vec2 p){\n"+
+        "  float value=0.0; float amp=1.0; float freq=waveFrequency;\n"+
+        "  for(int i=0;i<OCTAVES;i++){ value+=amp*abs(cnoise(p)); p*=freq; amp*=waveAmplitude; }\n"+
+        "  return value;\n"+
+        "}\n"+
+        "float pattern(vec2 p){ vec2 p2=p-time*waveSpeed; return fbm(p+fbm(p2)); }\n"+
+        "const float bayer[64]=float[64](\n"+
+        "  0.0/64.0,32.0/64.0,8.0/64.0,40.0/64.0,2.0/64.0,34.0/64.0,10.0/64.0,42.0/64.0,\n"+
+        "  48.0/64.0,16.0/64.0,56.0/64.0,24.0/64.0,50.0/64.0,18.0/64.0,58.0/64.0,26.0/64.0,\n"+
+        "  12.0/64.0,44.0/64.0,4.0/64.0,36.0/64.0,14.0/64.0,46.0/64.0,6.0/64.0,38.0/64.0,\n"+
+        "  60.0/64.0,28.0/64.0,52.0/64.0,20.0/64.0,62.0/64.0,30.0/64.0,54.0/64.0,22.0/64.0,\n"+
+        "  3.0/64.0,35.0/64.0,11.0/64.0,43.0/64.0,1.0/64.0,33.0/64.0,9.0/64.0,41.0/64.0,\n"+
+        "  51.0/64.0,19.0/64.0,59.0/64.0,27.0/64.0,49.0/64.0,17.0/64.0,57.0/64.0,25.0/64.0,\n"+
+        "  15.0/64.0,47.0/64.0,7.0/64.0,39.0/64.0,13.0/64.0,45.0/64.0,5.0/64.0,37.0/64.0,\n"+
+        "  63.0/64.0,31.0/64.0,55.0/64.0,23.0/64.0,61.0/64.0,29.0/64.0,53.0/64.0,21.0/64.0\n"+
+        ");\n"+
+        "vec3 dither(vec3 color){\n"+
+        "  vec2 pc=floor(gl_FragCoord.xy/pixelSize);\n"+
+        "  int x=int(mod(pc.x,8.0)); int y=int(mod(pc.y,8.0));\n"+
+        "  float threshold=bayer[y*8+x]-0.5;\n"+
+        "  color+=threshold/colorNum;\n"+
+        "  return floor(clamp(color,0.0,1.0)*(colorNum-1.0)+0.5)/(colorNum-1.0);\n"+
+        "}\n"+
+        "void main(){\n"+
+        "  vec2 uv=gl_FragCoord.xy/resolution.xy;\n"+
+        "  uv-=0.5; uv.x*=resolution.x/resolution.y;\n"+
+        "  float f=pattern(uv);\n"+
+        "  f=clamp(f*1.4,0.0,1.0);\n"+
+        "  vec3 col=mix(backgroundColor,waveColor,f);\n"+
+        "  col+=pow(f,4.0)*0.5*waveColor;\n"+
+        "  col=dither(col);\n"+
+        "  fragColor=vec4(col,1.0);\n"+
+        "}\n";
+
+    function sh(type,src){ var s=gl.createShader(type); gl.shaderSource(s,src); gl.compileShader(s);
+        if(!gl.getShaderParameter(s,gl.COMPILE_STATUS)){ window.__ditherErr=(window.__ditherErr||"")+"\nSHADER: "+gl.getShaderInfoLog(s); console.warn(gl.getShaderInfoLog(s)); } return s; }
+    var prog=gl.createProgram();
+    gl.attachShader(prog,sh(gl.VERTEX_SHADER,VERT));
+    gl.attachShader(prog,sh(gl.FRAGMENT_SHADER,FRAG));
+    gl.bindAttribLocation(prog,0,"aPos");
+    gl.linkProgram(prog);
+    if(!gl.getProgramParameter(prog,gl.LINK_STATUS)){ window.__ditherErr=(window.__ditherErr||"")+"\nLINK: "+gl.getProgramInfoLog(prog); console.warn(gl.getProgramInfoLog(prog)); canvas.style.display="none"; return; }
+    gl.useProgram(prog);
+
+    var buf=gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER,buf);
+    gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1, 3,-1, -1,3]),gl.STATIC_DRAW);
+    gl.enableVertexAttribArray(0);
+    gl.vertexAttribPointer(0,2,gl.FLOAT,false,0,0);
+
+    var U={};
+    ["resolution","time","waveSpeed","waveFrequency","waveAmplitude","waveColor","backgroundColor","pixelSize","colorNum"].forEach(function(n){ U[n]=gl.getUniformLocation(prog,n); });
+
+    gl.uniform1f(U.waveSpeed,0.05);
+    gl.uniform1f(U.waveFrequency,3.0);
+    gl.uniform1f(U.waveAmplitude,0.4);
+    gl.uniform1f(U.pixelSize,2.0);
+    gl.uniform1f(U.colorNum,4.0);
+    gl.uniform3f(U.backgroundColor,0.024,0.027,0.058);
+
+    function hexToRGB(hex){ var m=/^#?([\da-f]{2})([\da-f]{2})([\da-f]{2})$/i.exec(hex||"");
+        return m?[parseInt(m[1],16)/255,parseInt(m[2],16)/255,parseInt(m[3],16)/255]:[0.72,0.69,0.86]; }
+    function setAccent(hex){ var c=hexToRGB(hex); gl.useProgram(prog); gl.uniform3f(U.waveColor,c[0],c[1],c[2]); }
+    setAccent("#b8b0da");
+
+    function resize(){
+        var dpr=Math.min(window.devicePixelRatio||1,2);
+        var w=Math.floor(window.innerWidth*dpr), h=Math.floor(window.innerHeight*dpr);
+        if(canvas.width!==w||canvas.height!==h){ canvas.width=w; canvas.height=h; }
+        gl.viewport(0,0,w,h);
+        gl.uniform2f(U.resolution,w,h);
+    }
+    window.addEventListener("resize",resize);
+    resize();
+
+    var running=true, raf, start=performance.now();
+    function frame(now){
+        if(!running) return;
+        gl.uniform1f(U.time,(now-start)/1000);
+        gl.drawArrays(gl.TRIANGLES,0,3);
+        raf=requestAnimationFrame(frame);
+    }
+    raf=requestAnimationFrame(frame);
+
+    window.NFDither={
+        setAccent:setAccent,
+        setEnabled:function(on){
+            canvas.style.display=on?"block":"none";
+            if(on&&!running){ running=true; start=performance.now(); raf=requestAnimationFrame(frame); }
+            if(!on){ running=false; if(raf) cancelAnimationFrame(raf); }
+        }
+    };
+
+    try{
+        var savedAccent=localStorage.getItem("sf-accent"); if(savedAccent) setAccent(savedAccent);
+        if(localStorage.getItem("sf-fx")==="0") window.NFDither.setEnabled(false);
+    }catch(e){}
+})();
+</script>
+</body>
+</html>
